@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia Interativo de Carreiras Militares - Super Turma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Super Turma Brand Palette (Manual de Identidade Visual) -->
+    <!-- Application Structure Plan: Designed as an interactive "Career Explorer Dashboard". Users are not forced into a linear read. A top-level filter bar (Force, School, Gender, Level) allows users to immediately find relevant careers. Results are shown as a dynamic grid of "cards". Clicking a card opens a modal with a tabbed interface (Overview, How to Join, Formation, Career) to present the dense "Ficha Técnica" in a digestible way. This structure is task-oriented (find, filter, compare, drill-down) and superior to a static text document for user exploration and understanding. -->
+    <!-- Visualization & Content Choices: Report Info: 12 Fichas Técnicas -> Goal: Filter/Compare -> Viz: Interactive Filter Bar (HTML/JS) + Dynamic Card Grid (HTML/Tailwind/JS) -> Interaction: Filters hide/show cards. Cards open modal. -> Justification: Turns passive guide into active tool. Report Info: Student vs. Formed Salary -> Goal: Show value progression -> Viz: Bar Chart (Chart.js/Canvas) inside modal -> Interaction: Chart is dynamically generated for each career. -> Justification: Clear visual ROI for the student. Report Info: Career Path -> Goal: Show progression -> Viz: Simple HTML/Tailwind flow diagram (e.g., Badge -> Arrow -> Badge) -> Interaction: Static visual. -> Justification: Cleaner than text, no complex libraries. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;800&display=swap');
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #F5FAFC;
+            font-weight: 400; /* Medium, as per manual */
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700; /* Bold */
+        }
+
+        .font-title {
+             font-weight: 800; /* ExtraBold for main titles */
+        }
+
+        .force-marinha { border-left-color: #0D5D8B; }
+        .force-exercito { border-left-color: #166534; }
+        .force-fab { border-left-color: #62A7D6; }
+
+        .modal-tab {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        .modal-tab.active {
+            color: #0D5D8B;
+            font-weight: 700;
+            border-bottom-color: #0D5D8B;
+        }
+        .modal-tab-content {
+            display: none;
+        }
+        .modal-tab-content.active {
+            display: block;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 250px;
+            max-height: 250px;
+        }
+
+        .step-card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1rem;
+            text-align: center;
+            width: 80%;
+            margin-bottom: 1rem;
+        }
+        @media (min-width: 768px) {
+            .step-card {
+                width: 18%;
+                margin-bottom: 0;
+            }
+        }
+
+        /* Custom Brand Colors */
+        .brand-text-dark { color: #1D1E25; }
+        .brand-text-medium { color: #0D5D8B; }
+        .brand-text-accent { color: #EABB45; }
+
+        .brand-bg-dark { background-color: #1D1E25; }
+        .brand-bg-medium { background-color: #0D5D8B; }
+        .brand-bg-accent { background-color: #EABB45; }
+
+        .brand-checkbox-marinha { color: #0D5D8B; }
+        .brand-checkbox-exercito { color: #166534; }
+        .brand-checkbox-fab { color: #62A7D6; }
+
+        .brand-text-light-blue { color: #62A7D6; }
+
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-title brand-text-dark">Guia Interativo de Carreiras Militares</h1>
+            <span class="text-xl font-bold brand-text-accent">Seja Super!</span>
+        </div>
+    </header>
+
+    <!-- Intro Section (Why Military?) -->
+    <section class="container mx-auto px-4 py-8">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-title brand-text-dark mb-4">Por Que Ser Militar?</h2>
+            <p class="text-gray-700 mb-6 font-light">A carreira militar é uma das escolhas mais sólidas que um jovem pode fazer. Não é apenas pelo salário; é sobre um conjunto de benefícios que mudam sua vida e a da sua família: estabilidade, plano de carreira definido, assistência completa e, acima de tudo, propósito.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div class="bg-[#94D0F0]/20 p-4 rounded-lg">
+                    <h3 class="font-bold brand-text-medium">Estabilidade</h3>
+                    <p class="text-sm brand-text-medium font-light">Conquiste a segurança que só a carreira pública oferece após a formação.</p>
+                </div>
+                <div class="bg-[#94D0F0]/20 p-4 rounded-lg">
+                    <h3 class="font-bold brand-text-medium">Plano de Carreira</h3>
+                    <p class="text-sm brand-text-medium font-light">Sua progressão é baseada no mérito, com promoções e aumentos definidos.</p>
+                </div>
+                <div class="bg-[#EABB45]/20 p-4 rounded-lg">
+                    <h3 class="font-bold text-[#b48a28]">Sem "QI"</h3>
+                    <p class="text-sm text-[#b48a28] font-light">O ingresso é 100% por concurso. A sua vaga depende apenas do seu esforço.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: O Caminho da Aprovação -->
+    <section class="container mx-auto px-4 py-8 md:py-12">
+        <h2 class="text-3xl font-title brand-text-dark text-center mb-8">O Caminho da Aprovação</h2>
+        <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 md:space-x-4">
+            <div class="step-card">
+                <span class="text-5xl">1️⃣</span>
+                <h3 class="text-xl font-bold mt-2 brand-text-medium">Inscrição</h3>
+                <p class="text-gray-600 text-sm font-light">Acompanhar o edital e garantir a inscrição no prazo.</p>
+            </div>
+            <div class="text-2xl font-bold text-gray-400 md:hidden">▼</div>
+            <div class="hidden md:block text-2xl font-bold text-gray-400">➡️</div>
+            
+            <div class="step-card">
+                <span class="text-5xl">2️⃣</span>
+                <h3 class="text-xl font-bold mt-2 brand-text-medium">Prova Teórica</h3>
+                <p class="text-gray-600 text-sm font-light">A etapa principal. Exige foco total no "papiro".</p>
+            </div>
+            <div class="text-2xl font-bold text-gray-400 md:hidden">▼</div>
+            <div class="hidden md:block text-2xl font-bold text-gray-400">➡️</div>
+
+            <div class="step-card">
+                <span class="text-5xl">3️⃣</span>
+                <h3 class="text-xl font-bold mt-2 brand-text-medium">Teste Físico (TAF)</h3>
+                <p class="text-gray-600 text-sm font-light">O corpo precisa estar tão preparado quanto a mente.</p>
+            </div>
+            <div class="text-2xl font-bold text-gray-400 md:hidden">▼</div>
+            <div class="hidden md:block text-2xl font-bold text-gray-400">➡️</div>
+
+            <div class="step-card">
+                <span class="text-5xl">4️⃣</span>
+                <h3 class="text-xl font-bold mt-2 brand-text-medium">Exames Médicos</h3>
+                <p class="text-gray-600 text-sm font-light">Uma bateria de exames para atestar a saúde completa.</p>
+            </div>
+            <div class="text-2xl font-bold text-gray-400 md:hidden">▼</div>
+            <div class="hidden md:block text-2xl font-bold text-gray-400">➡️</div>
+
+            <div class="step-card">
+                <span class="text-5xl">5️⃣</span>
+                <h3 class="text-xl font-bold mt-2 brand-text-medium">Matrícula</h3>
+                <p class="text-gray-600 text-sm font-light">O início do curso e a jornada para a farda!</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filters Section -->
+    <section class="container mx-auto px-4 py-6 sticky top-0 bg-[#F5FAFC] z-10 shadow-sm rounded-b-lg">
+        <div class="bg-white p-4 rounded-lg shadow">
+            <h3 class="text-xl font-title brand-text-dark mb-4">Encontre Sua Vaga</h3>
+            
+            <!-- Age Calculator Row -->
+            <div class="mb-4 p-4 border border-yellow-300 bg-yellow-50 rounded-lg">
+                <label for="birth-date" class="block text-sm font-semibold text-yellow-800 mb-2">Calculadora de Idade (Bizú!)</label>
+                <p class="text-xs text-yellow-700 mb-2 font-light">Insira sua data de nascimento para ver quais concursos você **não pode** fazer por idade.</p>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <input type="date" id="birth-date" class="flex-grow p-2 border border-gray-300 rounded-lg" max="2012-12-31" min="1995-01-01">
+                    <button id="check-age-btn" class="brand-bg-accent brand-text-dark font-semibold px-4 py-2 rounded-lg hover:bg-yellow-500 transition">Verificar Elegibilidade</button>
+                    <button id="clear-age-btn" class="bg-gray-200 text-gray-700 font-semibold px-4 py-2 rounded-lg hover:bg-gray-300 transition hidden">Limpar</button>
+                </div>
+            </div>
+
+            <!-- Subtítulo Adicionado -->
+            <h4 class="text-lg font-semibold brand-text-dark mt-6 mb-2 text-center sm:text-left">Ou Filtre pelas informações abaixo</h4>
+
+            <!-- Main Filters -->
+            <div id="filters" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <!-- Força -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Força Armada</label>
+                    <div class="flex flex-col space-y-2">
+                        <label class="flex items-center space-x-2"><input type="checkbox" data-filter="force" value="marinha" class="form-checkbox brand-checkbox-marinha rounded filter-input"> <span>Marinha</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" data-filter="force" value="exercito" class="form-checkbox brand-checkbox-exercito rounded filter-input"> <span>Exército</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" data-filter="force" value="fab" class="form-checkbox brand-checkbox-fab rounded filter-input"> <span>Aeronáutica</span></label>
+                    </div>
+                </div>
+                <!-- Escolaridade -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Escolaridade</label>
+                    <div class="flex flex-col space-y-2">
+                        <label class="flex items-center space-x-2"><input type="checkbox" data-filter="school" value="fundamental" class="form-checkbox rounded filter-input"> <span>Nível Fundamental</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" data-filter="school" value="medio" class="form-checkbox rounded filter-input"> <span>Nível Médio</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" data-filter="school" value="tecnico" class="form-checkbox rounded filter-input"> <span>Nível Técnico</span></label>
+                    </div>
+                </div>
+                <!-- Nível -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Nível da Carreira</label>
+                    <div class="flex flex-col space-y-2">
+                        <label class="flex items-center space-x-2"><input type="checkbox" data-filter="level" value="praca" class="form-checkbox rounded filter-input"> <span>Praça (Sargento/Soldado)</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" data-filter="level" value="oficial" class="form-checkbox rounded filter-input"> <span>Oficial (Comando)</span></label>
+                    </div>
+                </div>
+                <!-- Gênero -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Gênero</label>
+                    <div class="flex flex-col space-y-2">
+                        <label class="flex items-center space-x-2"><input type="checkbox" data-filter="gender" value="feminino" class="form-checkbox rounded filter-input"> <span>Vagas Femininas</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" data-filter="gender" value="masculino" class="form-checkbox rounded filter-input"> <span>Vagas Masculinas</span></label>
+                    </div>
+                </div>
+            </div>
+            <button id="reset-filters" class="mt-4 w-full brand-bg-dark text-white px-4 py-2 rounded-lg font-semibold hover:brand-bg-medium transition">Limpar Filtros</button>
+        </div>
+    </section>
+
+    <!-- Eligibility Panel (Hidden by default) -->
+    <section id="eligibility-panel" class="container mx-auto px-4 py-8 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-title brand-text-dark mb-4">Resultado da Verificação de Idade</h2>
+            <div id="eligibility-results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- JS will populate this -->
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Careers Grid -->
+    <main class="container mx-auto px-4 py-8">
+        <p id="result-count" class="text-lg font-semibold text-gray-700 mb-4">Exibindo 12 de 12 oportunidades:</p>
+        <div id="careers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Cards will be dynamically inserted here by JavaScript -->
+        </div>
+    </main>
+
+    <!-- Call to Action Section -->
+    <section class="container mx-auto px-4 py-8">
+        <div class="brand-bg-medium text-white p-8 rounded-lg shadow-xl text-center">
+            <h2 class="text-3xl font-title mb-4">O Sucesso Começa Agora!</h2>
+            <p class="text-blue-100 text-lg mb-6 font-light">Você já tem o mapa. O próximo passo é a preparação. O Super Turma é o Guia que existe para te dar o plano, o método e o acolhimento que você precisa para ser aprovado.</p>
+            <p class="text-lg mb-8 font-light">Não perca mais tempo. A hora de começar o seu "papiro" é agora.</p>
+            <a href="#" class="brand-bg-accent brand-text-dark font-bold text-lg px-8 py-3 rounded-lg shadow-md hover:bg-yellow-500 transition transform hover:scale-105 inline-block">
+                Fale com Nossa Equipe e Agende sua Aula!
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white mt-12 py-8 border-t border-gray-200">
+        <div class="container mx-auto px-4 text-center text-gray-600">
+            <h4 class="font-bold text-lg mb-2 brand-text-dark">APOIO E FONTES</h4>
+            <div class="flex justify-center space-x-6 mb-4">
+                <a href="https://www.marinha.mil.br/ingressonamarinha" target="_blank" class="hover:brand-text-medium">Portal da Marinha</a>
+                <a href="https://www.eb.mil.br/web/ingresso/concursos" target="_blank" class="hover:brand-text-medium">Portal do Exército</a>
+                <a href="https://www.fab.mil.br/ingresso" target="_blank" class="hover:brand-text-medium">Portal da Aeronáutica</a>
+            </div>
+            <p class="text-sm">&copy; 2025 Super Turma. Todos os direitos reservados.</p>
+            <p class="text-xs mt-1">Unidades em Nova Iguaçu, Comendador Soares e Santa Cruz.</p>
+        </div>
+    </footer>
+
+
+    <!-- Modal Structure (Hidden by default) -->
+    <div id="career-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-5 border-b border-gray-200 sticky top-0 bg-white">
+                <h3 id="modal-title" class="text-2xl font-title brand-text-dark"></h3>
+                <button id="modal-close" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
+            </div>
+            
+            <!-- Modal Tabs -->
+            <div class="border-b border-gray-200">
+                <nav id="modal-tabs" class="flex px-5">
+                    <button class="modal-tab active" data-tab="tab-overview">Visão Geral</button>
+                    <button class="modal-tab" data-tab="tab-howto">Como Ingressar</button>
+                    <button class="modal-tab" data-tab="tab-course">Curso de Formação</button>
+                    <button class="modal-tab" data-tab="tab-career">A Carreira</button>
+                </nav>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6">
+                <!-- Tab 1: Overview -->
+                <div id="tab-overview" class="modal-tab-content active">
+                    <p id="modal-description" class="text-gray-700 mb-6 font-light"></p>
+                    <h4 class="font-bold text-lg brand-text-dark mb-3">Requisitos Principais</h4>
+                    <ul id="modal-requirements" class="list-disc list-inside space-y-2 text-gray-700 font-light">
+                        <!-- JS will populate this -->
+                    </ul>
+                </div>
+
+                <!-- Tab 2: How to Join -->
+                <div id="tab-howto" class="modal-tab-content">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-bold text-lg brand-text-dark mb-3">Prova Teórica</h4>
+                            <ul id="modal-test-theory" class="list-disc list-inside space-y-2 text-gray-700 font-light">
+                                <!-- JS will populate this -->
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg brand-text-dark mb-3">Teste de Aptidão Física (TAF)</h4>
+                            <ul id="modal-test-taf" class="list-disc list-inside space-y-2 text-gray-700 font-light">
+                                <!-- JS will populate this -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Formation Course -->
+                <div id="tab-course" class="modal-tab-content">
+                    <h4 class="font-bold text-lg brand-text-dark mb-3">Detalhes do Curso</h4>
+                    <ul id="modal-course-details" class="list-disc list-inside space-y-2 text-gray-700 mb-6 font-light">
+                        <!-- JS will populate this -->
+                    </ul>
+                    <h4 class="font-bold text-lg brand-text-dark mb-3">Progressão Salarial</h4>
+                    <p class="text-gray-700 mb-4 font-light">Veja a diferença entre a ajuda de custo (durante o curso) e a remuneração inicial (após a formatura).</p>
+                    <div class="chart-container">
+                        <canvas id="salary-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tab 4: The Career -->
+                <div id="tab-career" class="modal-tab-content">
+                    <ul id="modal-career-details" class="list-disc list-inside space-y-2 text-gray-700 mb-6 font-light">
+                        <!-- JS will populate this -->
+                    </ul>
+                    <h4 class="font-bold text-lg brand-text-dark mb-3">Plano de Carreira</h4>
+                    <div id="modal-career-path" class="flex flex-wrap items-center gap-2">
+                        <!-- JS will populate this -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const careersData = [
+                {
+                    id: 'cfn',
+                    force: 'marinha',
+                    level: 'praca',
+                    school: ['medio'],
+                    gender: ['masculino'],
+                    title: 'Soldado Fuzileiro Naval (CFN)',
+                    cardInfo: 'Tropa de Elite Anfíbia',
+                    ageString: '18-22 anos',
+                    ageRules: [
+                        { area: 'Geral', minAge: 18, maxAge: 21, refDate: '2026-06-30', note: 'Ter no mínimo 18 e menos de 22 anos até 30/06 do ano da matrícula.' }
+                    ],
+                    description: 'A porta de entrada para a tropa de elite da Marinha do Brasil. O Fuzileiro Naval é um combatente anfíbio, treinado para atuar em missões em terra, no mar e no ar.',
+                    requirements: [
+                        'Gênero: Exclusivamente sexo masculino',
+                        'Idade: 18 a 21 anos (no ano da matrícula)',
+                        'Escolaridade: Ensino Médio completo',
+                        'Altura: 1,54m a 2,00m'
+                    ],
+                    testTheory: [
+                        'Língua Portuguesa (25 questões)',
+                        'Matemática (25 questões)'
+                    ],
+                    testTaf: [
+                        'Natação: 50m em até 2 min',
+                        'Corrida: 3.200m em até 19 min',
+                        'Flexão na barra: 3 repetições',
+                        'Flexão no solo: 38 repetições (1 min)',
+                        'Abdominal: 38 repetições (1 min)'
+                    ],
+                    courseDetails: [
+                        'Duração: 17 semanas (Internato)',
+                        'Local: CIAMPA (RJ) ou CIAB (DF)',
+                        'Rotina: Treinamento militar intenso, armamento, tiro e doutrina de Fuzileiro Naval.'
+                    ],
+                    studentSalary: 1303.90,
+                    careerDetails: [
+                        'Patente Inicial: Soldado Fuzileiro Naval (SD-FN)',
+                        'Local de Atuação: Unidades do CFN em todo o Brasil (maioria RJ).'
+                    ],
+                    formedSalary: 2294.50,
+                    careerPath: ['Soldado', 'Cabo', '3º Sargento', '2º Sargento', '1º Sargento', 'Suboficial']
+                },
+                {
+                    id: 'eam',
+                    force: 'marinha',
+                    level: 'praca',
+                    school: ['medio'],
+                    gender: ['masculino', 'feminino'],
+                    title: 'Aprendiz Marinheiro (EAM)',
+                    cardInfo: 'O "Homem do Mar"',
+                    ageString: '18-22 anos',
+                    ageRules: [
+                        { area: 'Geral', minAge: 18, maxAge: 21, refDate: '2026-06-30', note: 'Ter no mínimo 18 e menos de 22 anos até 30/06 do ano da matrícula.' }
+                    ],
+                    description: 'A principal porta de entrada para ser um Praça (Marinheiro) da Marinha, trabalhando na operação e manutenção de navios, submarinos e aeronaves.',
+                    requirements: [
+                        'Gênero: Ambos os sexos',
+                        'Idade: 18 a 21 anos (no ano da matrícula)',
+                        'Escolaridade: Ensino Médio completo',
+                        'Altura: 1,54m a 2,00m',
+                        'Estado Civil: Solteiro(a), sem filhos.'
+                    ],
+                    testTheory: [
+                        'Matemática (15 questões)',
+                        'Português (15 questões)',
+                        'Ciências - Física e Química (15 questões)',
+                        'Inglês (5 questões)'
+                    ],
+                    testTaf: [
+                        'Natação: 50m (1m30s Homens / 2m20s Mulheres)',
+                        'Corrida: 2.400m (16 min Homens / 17 min Mulheres)'
+                    ],
+                    courseDetails: [
+                        'Duração: 48 semanas (Internato)',
+                        'Local: EAMs (CE, PE, ES, SC)',
+                        'Rotina: Formação militar-naval e especialização (Eletroeletrônica, Apoio ou Mecânica).'
+                    ],
+                    studentSalary: 1303.90,
+                    careerDetails: [
+                        'Patente Inicial: Marinheiro (MN)',
+                        'Local de Atuação: Navios, submarinos e organizações militares em todo o país.'
+                    ],
+                    formedSalary: 2294.50,
+                    careerPath: ['Marinheiro', 'Cabo', '3º Sargento', '2º Sargento', '1º Sargento', 'Suboficial']
+                },
+                {
+                    id: 'cn',
+                    force: 'marinha',
+                    level: 'oficial',
+                    school: ['fundamental'],
+                    gender: ['masculino', 'feminino'],
+                    title: 'Colégio Naval (CN)',
+                    cardInfo: 'Ensino Médio e Preparatório de Elite',
+                    ageString: '15-18 anos',
+                    ageRules: [
+                        { area: 'Geral', minAge: 15, maxAge: 17, refDate: '2026-06-30', note: 'Ter no mínimo 15 e menos de 18 anos até 30/06 do ano da matrícula.' }
+                    ],
+                    description: 'Instituição de Ensino Médio da Marinha, em regime de internato, que prepara jovens para o ingresso na Escola Naval (a faculdade dos Oficiais).',
+                    requirements: [
+                        'Gênero: Ambos os sexos',
+                        'Idade: 15 a 17 anos (no ano da matrícula)',
+                        'Escolaridade: Ensino Fundamental completo',
+                        'Altura: 1,54m a 1,95m',
+                        'Estado Civil: Solteiro(a), sem filhos.'
+                    ],
+                    testTheory: [
+                        'Dia 1: Matemática (20) e Inglês (20)',
+                        'Dia 2: Português (20), E. Sociais (12), Ciências (18) e Redação'
+                    ],
+                    testTaf: [
+                        'Natação: 25m (50s Homens / 1 min Mulheres)',
+                        'Corrida: 2.400m (16 min Homens / 17 min Mulheres)'
+                    ],
+                    courseDetails: [
+                        'Duração: 3 anos (Internato)',
+                        'Local: Angra dos Reis (RJ)',
+                        'Rotina: Ensino Médio completo + formação militar-naval.'
+                    ],
+                    studentSalary: 1398.30,
+                    careerDetails: [
+                        'Patente Inicial: Aluno (preparatório)',
+                        'Local de Atuação: Angra dos Reis (RJ)'
+                    ],
+                    formedSalary: 8179.00,
+                    careerPath: ['Aluno do CN', 'Aspirante (Escola Naval)', 'Segundo-Tenente', '...Almirante de Esquadra']
+                },
+                {
+                    id: 'en',
+                    force: 'marinha',
+                    level: 'oficial',
+                    school: ['medio'],
+                    gender: ['masculino', 'feminino'],
+                    title: 'Escola Naval (EN)',
+                    cardInfo: 'Formação de Oficiais da Marinha',
+                    ageString: '18-23 anos',
+                    ageRules: [
+                        { area: 'Geral', minAge: 18, maxAge: 22, refDate: '2026-06-30', note: 'Ter no mínimo 18 e menos de 23 anos até 30/06 do ano da matrícula.' }
+                    ],
+                    description: 'A instituição de Ensino Superior da Marinha. É a universidade que forma os Oficiais de carreira dos Corpos da Armada, Fuzileiros Navais e Intendentes.',
+                    requirements: [
+                        'Gênero: Ambos os sexos',
+                        'Idade: 18 a 22 anos (no ano da matrícula)',
+                        'Escolaridade: Ensino Médio completo',
+                        'Altura: 1,54m a 2,00m',
+                        'Estado Civil: Solteiro(a), sem filhos.'
+                    ],
+                    testTheory: [
+                        'Dia 1: Matemática (22) e Inglês (18)',
+                        'Dia 2: Física (22), Português (18) e Redação'
+                    ],
+                    testTaf: [
+                        'Natação: 50m (1m30s Homens / 2m20s Mulheres)',
+                        'Corrida: 2.400m (14m30s Homens / 16 min Mulheres)'
+                    ],
+                    courseDetails: [
+                        'Duração: 5 anos (Internato)',
+                        'Local: Rio de Janeiro (RJ)',
+                        'Rotina: Graduação em Ciências Navais. Escolha entre Armada, Fuzileiros ou Intendência.'
+                    ],
+                    studentSalary: 1574.12,
+                    careerDetails: [
+                        'Patente Inicial: Segundo-Tenente (após período como Aspirante)',
+                        'Local de Atuação: Unidades da Marinha em todo o território nacional.'
+                    ],
+                    formedSalary: 8179.00,
+                    careerPath: ['Segundo-Tenente', 'Primeiro-Tenente', 'Capitão-Tenente', '...Almirante de Esquadra']
+                },
+                {
+                    id: 'cap',
+                    force: 'marinha',
+                    level: 'praca',
+                    school: ['tecnico'],
+                    gender: ['masculino', 'feminino'],
+                    title: 'Corpo Auxiliar de Praças (CAP)',
+                    cardInfo: 'Para quem já é Nível Técnico',
+                    ageString: '18-25 anos',
+                    ageRules: [
+                        { area: 'Geral', minAge: 18, maxAge: 24, refDate: '2026-12-31', note: 'Ter no mínimo 18 e menos de 25 anos até 31/12 do ano da matrícula.' }
+                    ],
+                    description: 'O concurso para quem já possui um Curso Técnico de Nível Médio e deseja ingressar na Marinha como Praça, começando como Cabo, para exercer sua profissão.',
+                    requirements: [
+                        'Gênero: Ambos os sexos',
+                        'Idade: 18 a 24 anos (no ano da matrícula)',
+                        'Escolaridade: Ensino Médio + Curso Técnico completo na área (Ex: Enfermagem, Contabilidade, Eletrônica, etc.)',
+                        'Altura: 1,54m a 2,00m'
+                    ],
+                    testTheory: [
+                        'Prova Objetiva: 50 questões de Conhecimentos Profissionais (da sua área técnica)',
+                        'Redação'
+                    ],
+                    testTaf: [
+                        'Natação: 25m (50s Homens / 1 min Mulheres)',
+                        'Corrida: 2.400m (16 min Homens / 17 min Mulheres)'
+                    ],
+                    courseDetails: [
+                        'Duração: 17 semanas (Internato)',
+                        'Local: CIAA, Rio de Janeiro (RJ)',
+                        'Rotina: Foco na adaptação à vida militar e formação naval.'
+                    ],
+                    studentSalary: 1398.30,
+                    careerDetails: [
+                        'Patente Inicial: Cabo (CB)',
+                        'Local de Atuação: Organizações Militares em terra (Hospitais, Bases, Centros de Manutenção).'
+                    ],
+                    formedSalary: 3800.00,
+                    careerPath: ['Cabo', '3º Sargento', '2º Sargento', '1º Sargento', 'Suboficial']
+                },
+                {
+                    id: 'efomm',
+                    force: 'marinha',
+                    level: 'oficial',
+                    school: ['medio'],
+                    gender: ['masculino', 'feminino'],
+                    title: 'Marinha Mercante (EFOMM)',
+                    cardInfo: 'Oficial de Navios Civis (Híbrido)',
+                    ageString: '17-24 anos',
+                    ageRules: [
+                        { area: 'Geral', minAge: 17, maxAge: 23, refDate: '2026-12-31', note: 'Ter no mínimo 17 e menos de 24 anos até 31/12 do ano da matrícula.' }
+                    ],
+                    description: 'Forma Oficiais para a Marinha Mercante (navios civis, como cargueiros e cruzeiros), mas é supervisionado pela Marinha de Guerra. O formado torna-se Oficial da Reserva.',
+                    requirements: [
+                        'Gênero: Ambos os sexos',
+                        'Idade: 17 a 23 anos (no ano da matrícula)',
+                        'Escolaridade: Ensino Médio completo',
+                        'Altura: Mínima 1,54m (Homens) / 1,52m (Mulheres)'
+                    ],
+                    testTheory: [
+                        'Português',
+                        'Redação',
+                        'Inglês',
+                        'Matemática',
+                        'Física'
+                    ],
+                    testTaf: [
+                        'Corrida: 2.300m em 12 min (Homens) / 1.900m em 12 min (Mulheres)',
+                        'Natação: 50m em 2 min (Homens) / 2m20s (Mulheres)'
+                    ],
+                    courseDetails: [
+                        'Duração: 3 anos (Internato)',
+                        'Local: CIAGA (RJ) ou CIABA (PA)',
+                        'Rotina: Graduação em Náutica ou Máquinas + instrução militar.'
+                    ],
+                    studentSalary: 1574.12,
+                    careerDetails: [
+                        'Patente Inicial: Oficial da Marinha Mercante (Civil) / Segundo-Tenente da Reserva (Militar)',
+                        'Local de Atuação: Navios de empresas privadas (Mercante) ou convocado para a Marinha (Militar).'
+                    ],
+                    formedSalary: 8179.00,
+                    careerPath: ['Oficial Mercante', '(Se convocado) Segundo-Tenente', '...Carreira de Oficial']
+                },
+                {
+                    id: 'esa',
+                    force: 'exercito',
+                    level: 'praca',
+                    school: ['medio', 'tecnico'],
+                    gender: ['masculino', 'feminino'],
+                    title: 'Sargento das Armas (ESA)',
+                    cardInfo: 'Formação de Sargentos do Exército',
+                    ageString: '17-24 / 17-26 anos',
+                    ageRules: [
+                        { area: 'Geral/Aviação', minAge: 17, maxAge: 24, refDate: '2026-12-31', note: 'Ter no mínimo 17 e no máximo 24 anos até 31/12 do ano da matrícula.' },
+                        { area: 'Saúde/Música', minAge: 17, maxAge: 26, refDate: '2026-12-31', note: 'Ter no mínimo 17 e no máximo 26 anos até 31/12 do ano da matrícula.' }
+                    ],
+                    description: 'O concurso de Nível Médio que forma os Sargentos de Carreira Combatentes, de Logística-Técnica e de Aviação do Exército. O elo vital entre o comando e a tropa.',
+                    requirements: [
+                        'Gênero: Ambos os sexos',
+                        'Idade (Geral/Aviação): 17 a 24 anos (no ano da matrícula)',
+                        'Idade (Saúde/Música): 17 a 26 anos (no ano da matrícula)',
+                        'Escolaridade: Ensino Médio completo (Técnico em Enfermagem para Área Saúde)',
+                        'Altura: 1,60m (Homens) / 1,55m (Mulheres)'
+                    ],
+                    testTheory: [
+                        'Matemática (14 questões)',
+                        'Português (14 questões)',
+                        'História do Brasil (6 questões)',
+                        'Geografia do Brasil (6 questões)',
+                        'Inglês (10 questões)',
+                        'Redação',
+                        '(Prova Específica para Saúde/Música)'
+                    ],
+                    testTaf: [
+                        'Corrida: 2.450m em 12 min (Homens) / 2.100m em 12 min (Mulheres)',
+                        'Flexão na barra: 3 repetições (Homens) / 1 repetição (Mulheres)',
+                        'Flexão no solo: 21 repetições (Homens) / 12 repetições (Mulheres)',
+                        'Abdominal supra: 30 repetições (Homens) / 27 repetições (Mulheres)'
+                    ],
+                    courseDetails: [
+                        'Duração: 2 anos (Internato)',
+                        'Local: 1º Ano (Básico) em 13 unidades / 2º Ano (Qualificação) em Três Corações (MG), RJ ou SP.',
+                        'Rotina: Formação militar e especialização (Infantaria, Cavalaria, Artilharia, Logística, etc.).'
+                    ],
+                    studentSalary: 1309.00,
+                    careerDetails: [
+                        'Patente Inicial: Terceiro-Sargento (3ºSG)',
+                        'Local de Atuação: Quartéis em todo o território nacional.'
+                    ],
+                    formedSalary: 5049.00,
+                    careerPath: ['3º Sargento', '2º Sargento', '1º Sargento', 'Subtenente', '(QAO) Oficial']
+                },
+                {
+                    id: 'espcex',
+                    force: 'exercito',
+                    level: 'oficial',
+                    school: ['medio'],
+                    gender: ['masculino', 'feminino'],
+                    title: 'Cadetes do Exército (EsPCEx)',
+                    cardInfo: 'Formação de Oficiais Combatentes',
+                    ageString: '17-22 anos',
+                    ageRules: [
+                        { area: 'Geral', minAge: 17, maxAge: 22, refDate: '2026-12-31', note: 'Ter no mínimo 17 e no máximo 22 anos até 31/12 do ano da matrícula.' }
+                    ],
+                    description: 'O concurso de Nível Médio que inicia a formação do Oficial Combatente de Carreira do Exército. É o primeiro passo da jornada de 5 anos até a AMAN.',
+                    requirements: [
+                        'Gênero: Ambos os sexos',
+                        'Idade: 17 a 22 anos (no ano da matrícula)',
+                        'Escolaridade: Ensino Médio completo',
+                        'Altura: 1,60m (Homens) / 1,55m (Mulheres)',
+                        'Estado Civil: Não pode ser casado(a).'
+                    ],
+                    testTheory: [
+                        'Dia 1: Português (20), Física (12), Química (12) e Redação',
+                        'Dia 2: Matemática (20), Geografia (12), História (12) e Inglês (12)'
+                    ],
+                    testTaf: [
+                        'Corrida: 2.450m em 12 min (Homens) / 2.100m em 12 min (Mulheres)',
+                        'Flexão na barra: 3 repetições (Homens) / 1 repetição (Mulheres)',
+                        'Flexão no solo: 21 repetições (Homens) / 12 repetições (Mulheres)',
+                        'Abdominal supra: 30 repetições (Homens) / 27 repetições (Mulheres)'
+                    ],
+                    courseDetails: [
+                        'Duração: 5 anos (Internato)',
+                        'Local: 1º Ano na EsPCEx (Campinas-SP) / 2º ao 5º Ano na AMAN (Resende-RJ)',
+                        'Rotina: Graduação em Ciências Militares e escolha da Arma (Infantaria, Cavalaria, etc.).'
+                    ],
+                    studentSalary: 1426.00,
+                    careerDetails: [
+                        'Patente Inicial: Aspirante-a-Oficial, depois Segundo-Tenente.',
+                        'Local de Atuação: Unidades combatentes em todo o Brasil.'
+                    ],
+                    formedSalary: 8179.00,
+                    careerPath: ['Segundo-Tenente', 'Primeiro-Tenente', 'Capitão', '...General de Exército']
+                },
+                {
+                    id: 'eear',
+                    force: 'fab',
+                    level: 'praca',
+                    school: ['medio'],
+                    gender: ['masculino', 'feminino'],
+                    title: 'Especialistas da Aeronáutica (EEAR)',
+                    cardInfo: 'Formação de Sargentos da FAB',
+                    ageString: '17-25 anos',
+                    ageRules: [
+                        { area: 'Geral', minAge: 17, maxAge: 24, refDate: '2026-12-31', note: 'Ter no mínimo 17 e não completar 25 anos até 31/12 do ano da matrícula.' }
+                    ],
+                    description: 'O maior complexo de ensino técnico-militar da América do Sul. Forma os Sargentos Especialistas da Aeronáutica (Controle de Voo, Manutenção de Aeronaves, etc.).',
+                    requirements: [
+                        'Gênero: Ambos os sexos',
+                        'Idade: 17 a 24 anos (não completar 25 no ano da matrícula)',
+                        'Escolaridade: Ensino Médio completo'
+                    ],
+                    testTheory: [
+                        'Língua Portuguesa',
+                        'Língua Inglesa',
+                        'Matemática',
+                        'Física'
+                    ],
+                    testTaf: [
+                        'Corrida: 2.250m em 12 min (Homens) / 1.850m em 12 min (Mulheres)',
+                        'Flexão no solo: 26 repetições (Homens) / 16 repetições (Mulheres)',
+                        'Abdominal: 42 repetições (Homens) / 34 repetições (Mulheres)',
+                        'Salto horizontal: 1,8m (Homens) / 1,4m (Mulheres)'
+                    ],
+                    courseDetails: [
+                        'Duração: 2 anos (Internato)',
+                        'Local: EEAR, Guaratinguetá (SP)',
+                        'Rotina: Formação militar e especialização técnica (Controle de Tráfego Aéreo, Mecânico, etc.).'
+                    ],
+                    studentSalary: 1309.00,
+                    careerDetails: [
+                        'Patente Inicial: Terceiro-Sargento (3ºSG)',
+                        'Local de Atuação: Bases Aéreas e unidades da FAB em todo o país.'
+                    ],
+                    formedSalary: 5049.00,
+                    careerPath: ['3º Sargento', '2º Sargento', '1º Sargento', 'Suboficial', '(QAO) Oficial']
+                },
+                {
+                    id: 'afa',
+                    force: 'fab',
+                    level: 'oficial',
+                    school: ['medio'],
+                    gender: ['masculino', 'feminino'],
+                    title: 'Academia da Força Aérea (AFA)',
+                    cardInfo: 'Formação de Oficiais da FAB',
+                    ageString: '17-23 anos',
+                    ageRules: [
+                        { area: 'Geral', minAge: 17, maxAge: 22, refDate: '2026-12-31', note: 'Ter no mínimo 17 e não completar 23 anos até 31/12 do ano da matrícula.' }
+                    ],
+                    description: 'A instituição de Ensino Superior que forma os Oficiais de Carreira da FAB: Aviadores (pilotos), Intendentes (administração) e Infantaria.',
+                    requirements: [
+                        'Gênero: Ambos os sexos (Infantaria também aceita mulheres desde 2026!)',
+                        'Idade: 17 a 22 anos (não completar 23 no ano da matrícula)',
+                        'Escolaridade: Ensino Médio completo',
+                        'Estado Civil: Solteiro(a).'
+                    ],
+                    testTheory: [
+                        'Língua Portuguesa (16 questões)',
+                        'Língua Inglesa (16 questões)',
+                        'Matemática (16 questões)',
+                        'Física (16 questões)',
+                        'Redação'
+                    ],
+                    testTaf: [
+                        'Corrida: 2.250m em 12 min (Homens) / 1.850m em 12 min (Mulheres)',
+                        'Flexão no solo: 26 repetições (Homens) / 16 repetições (Mulheres)',
+                        'Abdominal: 42 repetições (Homens) / 34 repetições (Mulheres)',
+                        'Salto horizontal: 1,8m (Homens) / 1,4m (Mulheres)'
+                    ],
+                    courseDetails: [
+                        'Duração: 4 anos (Internato)',
+                        'Local: AFA, Pirassununga (SP)',
+                        'Rotina: Graduação em Administração e formação militar/especializada (Aviação, Intendência ou Infantaria).'
+                    ],
+                    studentSalary: 1457.00,
+                    careerDetails: [
+                        'Patente Inicial: Aspirante-a-Oficial, depois Segundo-Tenente.',
+                        'Local de Atuação: Bases Aéreas em todo o Brasil.'
+                    ],
+                    formedSalary: 8179.00,
+                    careerPath: ['Segundo-Tenente', 'Primeiro-Tenente', 'Capitão', '...Tenente-Brigadeiro do Ar']
+                },
+                {
+                    id: 'eags',
+                    force: 'fab',
+                    level: 'praca',
+                    school: ['tecnico'],
+                    gender: ['masculino', 'feminino'],
+                    title: 'Sargento Técnico (EAGS)',
+                    cardInfo: 'Para quem já é Nível Técnico',
+                    ageString: '17-25 anos',
+                    ageRules: [
+                        { area: 'Geral', minAge: 17, maxAge: 24, refDate: '2026-12-31', note: 'Ter no mínimo 17 e não completar 25 anos até 31/12 do ano da matrícula.' }
+                    ],
+                    description: 'O Estágio de Adaptação à Graduação de Sargento (EAGS) é para quem já tem um Curso Técnico de Nível Médio e deseja ingressar na FAB como Sargento Especialista.',
+                    requirements: [
+                        'Gênero: Ambos os sexos',
+                        'Idade: 17 a 24 anos (não completar 25 no ano da matrícula)',
+                        'Escolaridade: Ensino Médio + Curso Técnico completo na área (Ex: Administração, Enfermagem, Obras, etc.)'
+                    ],
+                    testTheory: [
+                        'Língua Portuguesa',
+                        'Conhecimentos Especializados (da sua área técnica)'
+                    ],
+                    testTaf: [
+                        'Corrida: 2.250m em 12 min (Homens) / 1.850m em 12 min (Mulheres)',
+                        'Flexão no solo: 26 repetições (Homens) / 16 repetições (Mulheres)',
+                        'Abdominal: 42 repetições (Homens) / 34 repetições (Mulheres)',
+                        'Salto horizontal: 1,8m (Homens) / 1,4m (Mulheres)'
+                    ],
+                    courseDetails: [
+                        'Duração: 1 ano (Internato)',
+                        'Local: EEAR, Guaratinguetá (SP)',
+                        'Rotina: Foco na adaptação militar, pois a parte técnica é pré-requisito.'
+                    ],
+                    studentSalary: 1309.00,
+                    careerDetails: [
+                        'Patente Inicial: Terceiro-Sargento (3ºSG)',
+                        'Local de Atuação: Bases Aéreas e unidades da FAB em todo o país.'
+                    ],
+                    formedSalary: 5049.00,
+                    careerPath: ['3º Sargento', '2º Sargento', '1º Sargento', 'Suboficial', '(QAO) Oficial']
+                },
+                {
+                    id: 'epcar',
+                    force: 'fab',
+                    level: 'oficial',
+                    school: ['fundamental'],
+                    gender: ['masculino', 'feminino'],
+                    title: 'Cadetes do Ar (EPCAR)',
+                    cardInfo: 'Ensino Médio e Preparatório de Elite',
+                    ageString: '14-19 anos',
+                    ageRules: [
+                        { area: 'Geral', minAge: 14, maxAge: 18, refDate: '2026-12-31', note: 'Ter no mínimo 14 e não completar 19 anos até 31/12 do ano da matrícula.' }
+                    ],
+                    description: 'A Escola Preparatória de Cadetes do Ar é o Ensino Médio da FAB, em regime de internato, que prepara jovens para o ingresso na AFA como futuros Oficiais Aviadores.',
+                    requirements: [
+                        'Gênero: Ambos os sexos',
+                        'Idade: 14 a 18 anos (não completar 19 no ano da matrícula)',
+                        'Escolaridade: Ensino Fundamental completo'
+                    ],
+                    testTheory: [
+                        'Língua Portuguesa',
+                        'Matemática',
+                        'Língua Inglesa',
+                        'Redação'
+                    ],
+                    testTaf: [
+                        'Corrida: 2.050m em 12 min (Homens) / 1.650m em 12 min (Mulheres)',
+                        'Flexão no solo: 21 repetições (Homens) / 12 repetições (Mulheres)',
+                        'Abdominal: 36 repetições (Homens) / 27 repetições (Mulheres)',
+                        'Salto horizontal: 1,6m (Homens) / 1,2m (Mulheres)'
+                    ],
+                    courseDetails: [
+                        'Duração: 3 anos (Internato)',
+                        'Local: Barbacena (MG)',
+                        'Rotina: Ensino Médio completo + formação militar e foco em ciências exatas.'
+                    ],
+                    studentSalary: 1309.00,
+                    careerDetails: [
+                        'Patente Inicial: Aluno (preparatório)',
+                        'Local de Atuação: Barbacena (MG)'
+                    ],
+                    formedSalary: 8179.00,
+                    careerPath: ['Aluno da EPCAR', 'Cadete (AFA)', 'Segundo-Tenente', '...Tenente-Brigadeiro do Ar']
+                }
+            ];
+
+            const grid = document.getElementById('careers-grid');
+            const resultCount = document.getElementById('result-count');
+            const modal = document.getElementById('career-modal');
+            const modalClose = document.getElementById('modal-close');
+            const modalTabs = document.getElementById('modal-tabs');
+            const modalTabContents = modal.querySelectorAll('.modal-tab-content');
+            const filterInputs = document.querySelectorAll('.filter-input');
+            const resetFiltersBtn = document.getElementById('reset-filters');
+
+            const birthDateInput = document.getElementById('birth-date');
+            const checkAgeBtn = document.getElementById('check-age-btn');
+            const clearAgeBtn = document.getElementById('clear-age-btn');
+            const eligibilityPanel = document.getElementById('eligibility-panel');
+            const eligibilityResults = document.getElementById('eligibility-results');
+            
+            let salaryChart = null;
+            let eligibleCareerIds = null;
+
+            function getForceIcon(force) {
+                if (force === 'marinha') return '⚓';
+                if (force === 'exercito') return '⭐';
+                if (force === 'fab') return '✈️';
+                return '';
+            }
+
+            function getForceColorClass(force) {
+                if (force === 'marinha') return 'bg-[#0D5D8B]/10 text-[#0D5D8B] force-marinha';
+                if (force === 'exercito') return 'bg-green-100 text-green-800 force-exercito';
+                if (force === 'fab') return 'bg-[#62A7D6]/20 text-[#0c6a9e] force-fab';
+                return 'bg-gray-100 text-gray-800';
+            }
+
+            function formatCurrency(value) {
+                return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            }
+
+            function createCareerCard(career) {
+                return `
+                    <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer border-l-4 ${getForceColorClass(career.force)}" data-id="${career.id}">
+                        <div class="p-5">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-semibold px-3 py-1 rounded-full ${getForceColorClass(career.force)}">${career.cardInfo}</span>
+                                <span class="text-3xl">${getForceIcon(career.force)}</span>
+                            </div>
+                            <h3 class="text-xl font-bold brand-text-dark mb-2">${career.title}</h3>
+                            <div class="flex flex-wrap gap-2 text-sm">
+                                <span class="bg-gray-200 text-gray-800 px-2 py-1 rounded-md font-medium">${career.school.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' / ')}</span>
+                                <span class="bg-gray-200 text-gray-800 px-2 py-1 rounded-md font-medium">${career.ageString}</span>
+                                ${career.gender.includes('feminino') ? '<span class="bg-pink-100 text-pink-800 px-2 py-1 rounded-md font-medium">Vagas Femininas</span>' : '<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-md font-medium">Vagas Masculinas</span>'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function renderCards(careers) {
+                if (careers.length === 0) {
+                    if (eligibleCareerIds !== null) {
+                        grid.innerHTML = '<p class="text-gray-600 text-lg col-span-full text-center">Nenhuma oportunidade encontrada para sua idade com os filtros selecionados.</p>';
+                    } else {
+                        grid.innerHTML = '<p class="text-gray-600 text-lg col-span-full text-center">Nenhuma carreira encontrada com os filtros selecionados. Tente ajustar sua busca.</p>';
+                    }
+                } else {
+                    grid.innerHTML = careers.map(createCareerCard).join('');
+                }
+                
+                document.querySelectorAll('#careers-grid [data-id]').forEach(card => {
+                    card.addEventListener('click', () => openModal(card.dataset.id));
+                });
+            }
+
+            function openModal(id) {
+                const career = careersData.find(c => c.id === id);
+                if (!career) return;
+
+                document.getElementById('modal-title').textContent = career.title;
+                document.getElementById('modal-description').textContent = career.description;
+                
+                document.getElementById('modal-requirements').innerHTML = career.requirements.map(item => `<li>${item}</li>`).join('');
+                
+                document.getElementById('modal-test-theory').innerHTML = career.testTheory.map(item => `<li>${item}</li>`).join('');
+                document.getElementById('modal-test-taf').innerHTML = career.testTaf.map(item => `<li>${item}</li>`).join('');
+                
+                document.getElementById('modal-course-details').innerHTML = career.courseDetails.map(item => `<li>${item}</li>`).join('');
+                
+                document.getElementById('modal-career-details').innerHTML = career.careerDetails.map(item => `<li>${item}</li>`).join('');
+                
+                document.getElementById('modal-career-path').innerHTML = career.careerPath.map((item, index) => `
+                    <span class="font-semibold bg-gray-200 text-gray-800 px-3 py-1 rounded-lg">${item}</span>
+                    ${index < career.careerPath.length - 1 ? '<span class="text-gray-400 font-bold">→</span>' : ''}
+                `).join('');
+
+                resetTabs();
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+
+                if (salaryChart) {
+                    salaryChart.destroy();
+                }
+                
+                const ctx = document.getElementById('salary-chart').getContext('2d');
+                salaryChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Aluno (Durante o Curso)', 'Formado (Salário Inicial)'],
+                        datasets: [{
+                            label: 'Remuneração (BRL)',
+                            data: [career.studentSalary, career.formedSalary],
+                            backgroundColor: [
+                                'rgba(234, 187, 69, 0.6)',
+                                'rgba(13, 93, 139, 0.6)'
+                            ],
+                            borderColor: [
+                                'rgba(234, 187, 69, 1)',
+                                'rgba(13, 93, 139, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) label += ': ';
+                                        if (context.parsed.y !== null) {
+                                            label += formatCurrency(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return formatCurrency(value);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function closeModal() {
+                modal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+                if (salaryChart) {
+                    salaryChart.destroy();
+                    salaryChart = null;
+                }
+            }
+            
+            function resetTabs() {
+                modalTabs.querySelectorAll('.modal-tab').forEach(tab => tab.classList.remove('active'));
+                modalTabContents.forEach(content => content.classList.remove('active'));
+                
+                modalTabs.querySelector('.modal-tab[data-tab="tab-overview"]').classList.add('active');
+                document.getElementById('tab-overview').classList.add('active');
+            }
+
+            function filterCareers() {
+                const filters = {
+                    force: [],
+                    school: [],
+                    level: [],
+                    gender: []
+                };
+
+                filterInputs.forEach(input => {
+                    if (input.checked) {
+                        filters[input.dataset.filter].push(input.value);
+                    }
+                });
+
+                const filteredByCheckboxes = careersData.filter(career => {
+                    const forceMatch = filters.force.length === 0 || filters.force.includes(career.force);
+                    const schoolMatch = filters.school.length === 0 || career.school.some(s => filters.school.includes(s));
+                    const levelMatch = filters.level.length === 0 || filters.level.includes(career.level);
+                    const genderMatch = filters.gender.length === 0 || career.gender.some(g => filters.gender.includes(g));
+
+                    return forceMatch && schoolMatch && levelMatch && genderMatch;
+                });
+
+                let finalFilteredCareers;
+                let countText;
+
+                if (eligibleCareerIds !== null) {
+                    finalFilteredCareers = filteredByCheckboxes.filter(career => eligibleCareerIds.includes(career.id));
+                    
+                    if (finalFilteredCareers.length === 0) {
+                        countText = "Nenhuma oportunidade encontrada para sua idade e filtros selecionados.";
+                    } else {
+                        countText = `Exibindo ${finalFilteredCareers.length} oportunidades filtradas pela sua idade e filtros:`;
+                    }
+                } else {
+                    finalFilteredCareers = filteredByCheckboxes;
+                    countText = `Exibindo ${finalFilteredCareers.length} de ${careersData.length} oportunidades:`;
+                }
+
+                resultCount.textContent = countText;
+                renderCards(finalFilteredCareers);
+            }
+
+            function resetFilters() {
+                filterInputs.forEach(input => input.checked = false);
+                filterCareers();
+            }
+
+            function calculateAge(birthDate, refDateStr) {
+                const birth = new Date(birthDate);
+                const ref = new Date(refDateStr);
+                
+                let age = ref.getFullYear() - birth.getFullYear();
+                const monthDiff = ref.getMonth() - birth.getMonth();
+                
+                if (monthDiff < 0 || (monthDiff === 0 && ref.getDate() < birth.getDate())) {
+                    age--;
+                }
+                return age;
+            }
+
+            function checkEligibility() {
+                const birthDate = birthDateInput.value;
+                if (!birthDate) {
+                    eligibilityPanel.classList.add('hidden');
+                    return;
+                }
+
+                let ineligibleHTML = '';
+                let eligibleCount = 0;
+                eligibleCareerIds = [];
+
+                careersData.forEach(career => {
+                    let isEligible = false;
+                    let reason = '';
+
+                    for (const rule of career.ageRules) {
+                        const ageAtRefDate = calculateAge(birthDate, rule.refDate);
+                        
+                        if (ageAtRefDate >= rule.minAge && ageAtRefDate <= rule.maxAge) {
+                            isEligible = true;
+                            break; 
+                        } else {
+                            if (ageAtRefDate < rule.minAge) {
+                                reason = `Muito novo. ${rule.note}`;
+                            } else if (ageAtRefDate > rule.maxAge) {
+                                reason = `Idade excedida. ${rule.note}`;
+                            }
+                        }
+                    }
+
+                    if (!isEligible) {
+                        ineligibleHTML += `
+                            <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-sm">
+                                <h4 class="font-bold">${career.title}</h4>
+                                <p class="text-sm font-light">${reason}</p>
+                            </div>
+                        `;
+                    } else {
+                        eligibleCount++;
+                        eligibleCareerIds.push(career.id);
+                    }
+                });
+
+                if (ineligibleHTML === '') {
+                    eligibilityResults.innerHTML = `
+                        <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-sm col-span-full">
+                            <h4 class="font-bold">Parabéns!</h4>
+                            <p class="text-sm font-light">Pela sua data de nascimento, você é elegível por idade para **todos** os concursos listados. Agora, use os filtros abaixo para refinar sua busca!</p>
+                        </div>
+                    `;
+                } else {
+                     eligibilityResults.innerHTML = `
+                        <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-sm">
+                            <h4 class="font-bold">Elegível para ${eligibleCount} Concursos</h4>
+                            <p class="text-sm font-light">Você ainda está na idade para ${eligibleCount} oportunidades! Os cards abaixo foram filtrados para você.</p>
+                        </div>
+                        <h3 class="text-xl font-bold brand-text-dark col-span-full mt-4">Concursos Inelegíveis por Idade:</h3>
+                        ${ineligibleHTML}
+                    `;
+                }
+
+                eligibilityPanel.classList.remove('hidden');
+                clearAgeBtn.classList.remove('hidden');
+                filterCareers();
+            }
+
+            function clearAgeCheck() {
+                birthDateInput.value = '';
+                eligibilityPanel.classList.add('hidden');
+                eligibilityResults.innerHTML = '';
+                clearAgeBtn.classList.add('hidden');
+                eligibleCareerIds = null;
+                filterCareers();
+            }
+
+            renderCards(careersData);
+            
+            filterInputs.forEach(input => input.addEventListener('change', filterCareers));
+            resetFiltersBtn.addEventListener('click', resetFilters);
+            modalClose.addEventListener('click', closeModal);
+            checkAgeBtn.addEventListener('click', checkEligibility);
+            clearAgeBtn.addEventListener('click', clearAgeCheck);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+
+            modalTabs.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-tab')) {
+                    modalTabs.querySelectorAll('.modal-tab').forEach(tab => tab.classList.remove('active'));
+                    modalTabContents.forEach(content => content.classList.remove('active'));
+                    
+                    e.target.classList.add('active');
+                    document.getElementById(e.target.dataset.tab).classList.add('active');
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
